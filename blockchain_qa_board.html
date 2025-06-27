@@ -211,6 +211,7 @@
     <h2>💬 Decentralized Q&A Board</h2>
     <div id="walletStatus">🔌 Not connected</div>
     <button class="meta-btn" onclick="connectWallet()" id="connectBtn">🔗 Connect MetaMask</button>
+    <button class="meta-btn" onclick="showProfile()" id="profileBtn" style="margin-right:10px;">👤 View Profile</button>
 
     <div class="stats" id="stats">
       <div class="stat-card">
@@ -278,10 +279,18 @@
     <div id="questions"></div>
   </div>
 
+  <div id="profileModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px 40px; border-radius:12px; max-width:350px; margin:auto; position:relative; top:15vh; box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+      <span style="position:absolute; top:10px; right:18px; font-size:1.5em; cursor:pointer; color:#888;" onclick="closeProfileModal()">&times;</span>
+      <h3 style="margin-top:0;">👤 Your Profile</h3>
+      <div id="profileContent" style="margin-top:18px;"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
     let provider, signer, contract;
-    const contractAddress = "0xcE60BFeA61360d63d728890Ad415f3ac051E63AA";
+    const contractAddress = "0xbE991C8c14f272aeD68018606A0560795a6bDafe";
     const contractABI = [
     {
       "inputs": [
@@ -416,6 +425,20 @@
       "name": "getQuestionCountByCategory",
       "outputs": [
         { "internalType": "uint256", "name": "", "type": "uint256" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "_address", "type": "address" }
+      ],
+      "name": "getUserProfile",
+      "outputs": [
+        { "internalType": "uint256", "name": "questions", "type": "uint256" },
+        { "internalType": "uint256", "name": "answers", "type": "uint256" },
+        { "internalType": "uint256", "name": "upvotes", "type": "uint256" },
+        { "internalType": "uint256", "name": "reputation", "type": "uint256" }
       ],
       "stateMutability": "view",
       "type": "function"
@@ -661,6 +684,33 @@
         console.error("Error loading questions:", error);
         container.innerHTML = '<div class="loading">Error loading questions. Please try again.</div>';
       }
+    }
+
+    async function showProfile() {
+      if (!signer) {
+        alert("Please connect your wallet to view your profile.");
+        return;
+      }
+      try {
+        const address = await signer.getAddress();
+        const profile = await contract.getUserProfile(address);
+        const [questions, answers, upvotes, reputation] = profile;
+        const content = `
+          <b>Address:</b> ${address.slice(0, 6)}...${address.slice(-4)}<br/>
+          <b>Questions Asked:</b> ${questions}<br/>
+          <b>Answers Given:</b> ${answers}<br/>
+          <b>Upvotes Received:</b> ${upvotes}<br/>
+          <b>Reputation:</b> <span style="color:#4a90e2; font-weight:700;">${reputation}</span>
+        `;
+        document.getElementById("profileContent").innerHTML = content;
+        document.getElementById("profileModal").style.display = "flex";
+      } catch (err) {
+        alert("Failed to load profile. Make sure you are connected and try again.");
+        console.error(err);
+      }
+    }
+    function closeProfileModal() {
+      document.getElementById("profileModal").style.display = "none";
     }
   </script>
 </body>
